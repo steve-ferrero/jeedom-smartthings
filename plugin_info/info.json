@@ -1,0 +1,20 @@
+{
+	"id" : "smartthings",
+	"name" : "SmartThings",
+	"description" : "Plugin pour utiliser les equipements de son compte smartThings dans jeedom",
+	"licence" : "AGPL",
+	"author" : "Steve Ferrero",
+	"require" : "3.2",
+	"category" : "\tautomation protocol",
+	"hasDependency" : false,
+	"hasOwnDeamon" : false,
+	"maxDependancyInstallTime" : 0,
+	"changelog" : "https://jeedom.github.io/plugin-template/#language#/changelog",
+	"documentation" : "https://jeedom.github.io/plugin-template/#language#/",
+	"link" : {
+		"forum":"Lien vers le forum",
+		"video" : "Lien vers une video"
+	},
+	"language" : ["fr_FR","en_US"],
+	"compatibility" : ["miniplus","smart","rpi","docker","diy","mobile"]
+}
