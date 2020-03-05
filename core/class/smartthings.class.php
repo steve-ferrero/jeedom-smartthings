@@ -26,12 +26,14 @@ class smartthings extends eqLogic {
 
     /*     * ***********************Methode static*************************** */
 
-    /*
-     * Fonction exécutée automatiquement toutes les minutes par Jeedom
-      public static function cron() {
 
+      public static function cron() {
+          $eqLogics = eqLogic::byType('smarthings', true);
+          foreach ($eqLogics as $eqLogic) {
+              $eqLogic->refresh();
+          }
       }
-     */
+
 
 
     /*
@@ -84,6 +86,251 @@ class smartthings extends eqLogic {
         
     }
 
+    public function refresh() {
+        if($this->getConfiguration('type') == "6962dd3b-aac6-4e86-9d85-9b86ba6ff166") {
+            $status = self::getDeviceStatus($this->getConfiguration('deviceId'));
+            $this->checkAndUpdateCmd('switch', ($status->switch->switch->value == "off") ? 0 : 1);
+            $this->checkAndUpdateCmd('status', ($status->washerOperatingState->machineState->value == "stop") ? 0 : 1);
+            $vars = get_object_vars($status);
+            $this->checkAndUpdateCmd('temperature', $vars["custom.washerWaterTemperature"]->washerWaterTemperature->value);
+            $this->checkAndUpdateCmd('rinse_cycles', $vars["custom.washerRinseCycles"]->washerRinseCycles->value);
+            $this->checkAndUpdateCmd('job', $status->execute->data->value->payload->currentJobState);
+            $this->checkAndUpdateCmd('remaining_time', $status->execute->data->value->payload->remainingTime);
+            $this->checkAndUpdateCmd('progress', $status->execute->data->value->payload->progressPercentage);
+            $this->checkAndUpdateCmd('mode', self::getWasherModeLabel($status->washerMode->washerMode->value));
+            $this->checkAndUpdateCmd('end_mode', $status->washerOperatingState->completionTime->value);
+            $this->checkAndUpdateCmd('spin_level', $vars["custom.washerSpinLevel"]->washerSpinLevel->value);
+        } else if($this->getConfiguration('type') == "c2c-rgbw-color-bulb") {
+            // TODO
+        }
+
+    }
+
+    public static function getWasherModeLabel($mode) {
+        switch ($mode) {
+            case "Table_00_Course_5C":
+                return "Super rapide";
+                break;
+            case "Table_00_Course_5B":
+                return "Coton";
+                break;
+            case "Table_00_Course_68":
+                return "ECoton";
+                break;
+            case "Table_00_Course_67":
+                return "Synthétique";
+                break;
+            case "Table_00_Course_65":
+                return "Laine";
+                break;
+            case "Table_00_Course_6C":
+                return "Jeans";
+                break;
+            case "Table_00_Course_64":
+                return "Rinçage + essorage";
+                break;
+            case "Table_00_Course_63":
+                return "Nettoyage tambour";
+                break;
+            case "Table_00_Course_61":
+                return "Couleur";
+                break;
+            case "Table_00_Course_60":
+                return "Imperméable";
+                break;
+            case "Table_00_Course_5F":
+                return "Bébé coton";
+                break;
+            case "Table_00_Course_5E":
+                return "Délicat";
+                break;
+            case "Table_00_Course_66":
+                return "Draps";
+                break;
+            case "Table_00_Course_5D":
+                return "Eco";
+                break;
+        }
+    }
+
+    public static function synchronize() {
+        $devices = self::getDevices();
+
+        foreach ($devices->items as $device) {
+            if(!self::isDeviceExist($device->deviceId)) {
+                if($device->deviceTypeId == "6962dd3b-aac6-4e86-9d85-9b86ba6ff166") { // Machine à laver Samsung
+                    $eqLogic = new eqLogic();
+                    $eqLogic->setEqType_name('smartthings');
+                    $eqLogic->setIsEnable(1);
+                    $eqLogic->setIsVisible(1);
+                    $eqLogic->setName($device->label);
+                    $eqLogic->setConfiguration('type', $device->deviceTypeId);
+                    $eqLogic->setConfiguration('deviceId', $device->deviceId);
+                    $eqLogic->save();
+
+                    $smartthingsCmd = new smartthingsCmd();
+                    $smartthingsCmd->setType('info');
+                    $smartthingsCmd->setSubType('binary');
+                    $smartthingsCmd->setName('Statut');
+                    $smartthingsCmd->setLogicalId("status");
+                    $smartthingsCmd->setEqLogic_id($eqLogic->getId());
+                    $smartthingsCmd->save();
+
+                    $smartthingsCmd = new smartthingsCmd();
+                    $smartthingsCmd->setType('info');
+                    $smartthingsCmd->setSubType('binary');
+                    $smartthingsCmd->setName('Sous tension');
+                    $smartthingsCmd->setLogicalId("switch");
+                    $smartthingsCmd->setEqLogic_id($eqLogic->getId());
+                    $smartthingsCmd->save();
+
+                    $smartthingsCmd = new smartthingsCmd();
+                    $smartthingsCmd->setType('info');
+                    $smartthingsCmd->setSubType('numeric');
+                    $smartthingsCmd->setName('Temperature');
+                    $smartthingsCmd->setLogicalId("temperature");
+                    $smartthingsCmd->setEqLogic_id($eqLogic->getId());
+                    $smartthingsCmd->save();
+
+                    $smartthingsCmd = new smartthingsCmd();
+                    $smartthingsCmd->setType('info');
+                    $smartthingsCmd->setSubType('numeric');
+                    $smartthingsCmd->setName('Nombre cycle de rinçage');
+                    $smartthingsCmd->setLogicalId("rinse_cycles");
+                    $smartthingsCmd->setEqLogic_id($eqLogic->getId());
+                    $smartthingsCmd->save();
+
+                    $smartthingsCmd = new smartthingsCmd();
+                    $smartthingsCmd->setType('info');
+                    $smartthingsCmd->setSubType('string');
+                    $smartthingsCmd->setName('Programme courant');
+                    $smartthingsCmd->setLogicalId("job");
+                    $smartthingsCmd->setEqLogic_id($eqLogic->getId());
+                    $smartthingsCmd->save();
+
+                    $smartthingsCmd = new smartthingsCmd();
+                    $smartthingsCmd->setType('info');
+                    $smartthingsCmd->setSubType('string');
+                    $smartthingsCmd->setName('Cycle courant');
+                    $smartthingsCmd->setLogicalId("mode");
+                    $smartthingsCmd->setEqLogic_id($eqLogic->getId());
+                    $smartthingsCmd->save();
+
+                    $smartthingsCmd = new smartthingsCmd();
+                    $smartthingsCmd->setType('info');
+                    $smartthingsCmd->setSubType('string');
+                    $smartthingsCmd->setName('Fin du programme');
+                    $smartthingsCmd->setLogicalId("end_mode");
+                    $smartthingsCmd->setEqLogic_id($eqLogic->getId());
+                    $smartthingsCmd->save();
+
+                    $smartthingsCmd = new smartthingsCmd();
+                    $smartthingsCmd->setType('info');
+                    $smartthingsCmd->setSubType('numeric');
+                    $smartthingsCmd->setName('Essorage');
+                    $smartthingsCmd->setLogicalId("spin_level");
+                    $smartthingsCmd->setEqLogic_id($eqLogic->getId());
+                    $smartthingsCmd->save();
+
+                    $smartthingsCmd = new smartthingsCmd();
+                    $smartthingsCmd->setType('info');
+                    $smartthingsCmd->setSubType('string');
+                    $smartthingsCmd->setName('Temps restant');
+                    $smartthingsCmd->setLogicalId("remaining_time");
+                    $smartthingsCmd->setEqLogic_id($eqLogic->getId());
+                    $smartthingsCmd->save();
+
+                    $smartthingsCmd = new smartthingsCmd();
+                    $smartthingsCmd->setType('info');
+                    $smartthingsCmd->setSubType('numeric');
+                    $smartthingsCmd->setName('Progression');
+                    $smartthingsCmd->setLogicalId("progress");
+                    $smartthingsCmd->setEqLogic_id($eqLogic->getId());
+                    $smartthingsCmd->save();
+
+                    $smartthingsCmd = new smartthingsCmd();
+                    $smartthingsCmd->setType('action');
+                    $smartthingsCmd->setSubType('other');
+                    $smartthingsCmd->setName('Refresh');
+                    $smartthingsCmd->setLogicalId("refresh");
+                    $smartthingsCmd->setEqLogic_id($eqLogic->getId());
+                    $smartthingsCmd->save();
+                } else if($device->name == "c2c-rgbw-color-bulb") { // Yeelight
+                    $eqLogic = new eqLogic();
+                    $eqLogic->setEqType_name('smartthings');
+                    $eqLogic->setIsEnable(1);
+                    $eqLogic->setIsVisible(1);
+                    $eqLogic->setName($device->label);
+                    $eqLogic->setConfiguration('type', $device->name);
+                    $eqLogic->setConfiguration('deviceId', $device->deviceId);
+                    $eqLogic->save();
+                }
+            }
+        }
+    }
+
+    private static function getDevices() {
+        $token = config::byKey('token', 'smartthings');
+
+        $curl = curl_init();
+
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => "https://api.smartthings.com/v1/devices",
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => "",
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => "GET",
+            CURLOPT_HTTPHEADER => array(
+                "Authorization: Bearer " . $token
+            ),
+        ));
+
+        $response = curl_exec($curl);
+
+        curl_close($curl);
+
+        return json_decode($response);
+    }
+
+    private static function getDeviceStatus($deviceId) {
+        $token = config::byKey('token', 'smartthings');
+
+        $curl = curl_init();
+
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => "https://api.smartthings.com/v1/devices/" .$deviceId. "/components/main/status",
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => "",
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => "GET",
+            CURLOPT_HTTPHEADER => array(
+                "Authorization: Bearer " . $token
+            ),
+        ));
+
+        $response = curl_exec($curl);
+
+        curl_close($curl);
+
+        return json_decode($response);
+    }
+
+    private static function isDeviceExist ($deviceId) {
+        $eqLogics = eqLogic::byType('smartthings');
+        foreach ($eqLogics as $eqLogic) {
+            if ($deviceId == $eqLogic->getConfiguration('deviceId')) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /*
      * Non obligatoire mais permet de modifier l'affichage du widget si vous en avez besoin
       public function toHtml($_version = 'dashboard') {
@@ -123,7 +370,12 @@ class smartthingsCmd extends cmd {
      */
 
     public function execute($_options = array()) {
-        
+        if($this->getType() == "action") {
+            if($this->getLogicalId() == "refresh") {
+                $eqLogic = $this->getEqLogic();
+                $eqLogic->refresh();
+            }
+        }
     }
 
     /*     * **********************Getteur Setteur*************************** */

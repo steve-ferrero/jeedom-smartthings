@@ -17,6 +17,11 @@
 
 
 $("#table_cmd").sortable({axis: "y", cursor: "move", items: ".cmd", placeholder: "ui-state-highlight", tolerance: "intersect", forcePlaceholderSize: true});
+
+$('#synchronize').on('click', function () {
+    synchronize();
+});
+
 /*
  * Fonction pour l'ajout de commande, appellé automatiquement par plugin.template
  */
@@ -29,7 +34,9 @@ function addCmdToTable(_cmd) {
     }
     var tr = '<tr class="cmd" data-cmd_id="' + init(_cmd.id) + '">';
     tr += '<td>';
-    tr += '<span class="cmdAttr" data-l1key="id" style="display:none;"></span>';
+    tr += '<span class="cmdAttr" data-l1key="id"></span>';
+    tr += '</td>';
+    tr += '<td>';
     tr += '<input class="cmdAttr form-control input-sm" data-l1key="name" style="width : 140px;" placeholder="{{Nom}}">';
     tr += '</td>';
     tr += '<td>';
@@ -50,4 +57,27 @@ function addCmdToTable(_cmd) {
         $('#table_cmd tbody tr:last .cmdAttr[data-l1key=type]').value(init(_cmd.type));
     }
     jeedom.cmd.changeType($('#table_cmd tbody tr:last'), init(_cmd.subType));
+}
+
+function synchronize() {
+    $.ajax({
+        type: "POST",
+        url: "plugins/smartthings/core/ajax/smartthings.ajax.php",
+        data: {
+            action: "synchronize"
+        },
+        dataType: 'json',
+        error: function (request, status, error) {
+            handleAjaxError(request, status, error);
+        },
+        success: function (data) {
+            if (data.state != 'ok') {
+                $('#div_alert').showAlert({message: data.result, level: 'danger'});
+                return;
+            } else {
+                $('#div_alert').showAlert({message: '{{Synchronisation terminée}}', level: 'success'});
+                document.location.reload(true);
+            }
+        }
+    });
 }

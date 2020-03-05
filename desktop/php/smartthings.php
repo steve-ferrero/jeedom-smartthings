@@ -11,10 +11,10 @@ $eqLogics = eqLogic::byType($plugin->getId());
    <div class="col-xs-12 eqLogicThumbnailDisplay">
   <legend><i class="fas fa-cog"></i>  {{Gestion}}</legend>
   <div class="eqLogicThumbnailContainer">
-      <div class="cursor eqLogicAction logoPrimary" data-action="add">
-        <i class="fas fa-plus-circle"></i>
+      <div id="synchronize" class="cursor eqLogicAction logoPrimary">
+        <i class="fas fa-sync"></i>
         <br>
-        <span>{{Ajouter}}</span>
+        <span>{{Synchroniser}}</span>
     </div>
       <div class="cursor eqLogicAction logoSecondary" data-action="gotoPluginConf">
       <i class="fas fa-wrench"></i>
@@ -22,14 +22,14 @@ $eqLogics = eqLogic::byType($plugin->getId());
     <span>{{Configuration}}</span>
   </div>
   </div>
-  <legend><i class="fas fa-table"></i> {{Mes templates}}</legend>
+  <legend><i class="fas fa-table"></i> {{Mes equipements}}</legend>
 	   <input class="form-control" placeholder="{{Rechercher}}" id="in_searchEqlogic" />
 <div class="eqLogicThumbnailContainer">
     <?php
 foreach ($eqLogics as $eqLogic) {
 	$opacity = ($eqLogic->getIsEnable()) ? '' : 'disableCard';
 	echo '<div class="eqLogicDisplayCard cursor '.$opacity.'" data-eqLogic_id="' . $eqLogic->getId() . '">';
-	echo '<img src="' . $plugin->getPathImgIcon() . '"/>';
+	echo '<img src="plugins/smartthings/core/config/devices/' . $eqLogic->getConfiguration('type') . '.png"/>';
 	echo '<br>';
 	echo '<span class="name">' . $eqLogic->getHumanName(true, true) . '</span>';
 	echo '</div>';
@@ -107,7 +107,7 @@ foreach (jeeObject::all() as $object) {
 <table id="table_cmd" class="table table-bordered table-condensed">
     <thead>
         <tr>
-            <th>{{Nom}}</th><th>{{Type}}</th><th>{{Action}}</th>
+            <th style="width: 50px;">#</th><th>{{Nom}}</th><th>{{Type}}</th><th>{{Action}}</th>
         </tr>
     </thead>
     <tbody>
@@ -119,5 +119,5 @@ foreach (jeeObject::all() as $object) {
 </div>
 </div>
 
-<?php include_file('desktop', 'template', 'js', 'smartthings');?>
+<?php include_file('desktop', 'smartthings', 'js', 'smartthings');?>
 <?php include_file('core', 'plugin.template', 'js');?>

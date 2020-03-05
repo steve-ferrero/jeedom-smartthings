@@ -5,7 +5,7 @@
 	"licence" : "AGPL",
 	"author" : "Steve Ferrero",
 	"require" : "3.2",
-	"category" : "\tautomation protocol",
+	"category" : "automation protocol",
 	"hasDependency" : false,
 	"hasOwnDeamon" : false,
 	"maxDependancyInstallTime" : 0,
