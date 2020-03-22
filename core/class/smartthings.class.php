@@ -169,7 +169,20 @@ class smartthings extends eqLogic {
         $tmp = floor( ($tmp - $resultDiff['hour'])  /24 );
         $resultDiff['day'] = $tmp;
 
-        return (($resultDiff['hour'] < 10) ? "0" : "").$resultDiff['hour'].":".(($resultDiff['minute'] < 10) ? "0" : "").$resultDiff['minute'];
+        $str = "";
+
+        if($resultDiff['hour'] > 0) {
+            $str .= $resultDiff['hour']." heure";
+        }
+
+        if($resultDiff['minute'] > 0) {
+            if($str != "") {
+                $str.= " et ";
+            }
+            $str .= $resultDiff['minute']." minute";
+        }
+
+        return $str;
     }
 
     public static function synchronize() {
