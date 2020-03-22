@@ -28,7 +28,7 @@ class smartthings extends eqLogic {
 
 
       public static function cron() {
-          $eqLogics = eqLogic::byType('smarthings', true);
+          $eqLogics = eqLogic::byType('smartthings');
           foreach ($eqLogics as $eqLogic) {
               $eqLogic->refresh();
           }
@@ -95,7 +95,7 @@ class smartthings extends eqLogic {
             $this->checkAndUpdateCmd('temperature', $vars["custom.washerWaterTemperature"]->washerWaterTemperature->value);
             $this->checkAndUpdateCmd('rinse_cycles', $vars["custom.washerRinseCycles"]->washerRinseCycles->value);
             $this->checkAndUpdateCmd('job', $status->execute->data->value->payload->currentJobState);
-            $this->checkAndUpdateCmd('remaining_time', $status->execute->data->value->payload->remainingTime);
+            $this->checkAndUpdateCmd('remaining_time', self::dateDiff(time(), strtotime($status->washerOperatingState->completionTime->value)));
             $this->checkAndUpdateCmd('progress', $status->execute->data->value->payload->progressPercentage);
             $this->checkAndUpdateCmd('mode', self::getWasherModeLabel($status->washerMode->washerMode->value));
             $this->checkAndUpdateCmd('end_mode', $status->washerOperatingState->completionTime->value);
@@ -151,6 +151,25 @@ class smartthings extends eqLogic {
                 return "Eco";
                 break;
         }
+    }
+
+    public static function dateDiff($date1, $date2){
+        $diff = abs($date1 - $date2);
+        $resultDiff = array();
+
+        $tmp = $diff;
+        $resultDiff['second'] = $tmp % 60;
+
+        $tmp = floor( ($tmp - $resultDiff['second']) /60 );
+        $resultDiff['minute'] = $tmp % 60;
+
+        $tmp = floor( ($tmp - $resultDiff['minute'])/60 );
+        $resultDiff['hour'] = $tmp % 24;
+
+        $tmp = floor( ($tmp - $resultDiff['hour'])  /24 );
+        $resultDiff['day'] = $tmp;
+
+        return (($resultDiff['hour'] < 10) ? "0" : "").$resultDiff['hour'].":".(($resultDiff['minute'] < 10) ? "0" : "").$resultDiff['minute'];
     }
 
     public static function synchronize() {
