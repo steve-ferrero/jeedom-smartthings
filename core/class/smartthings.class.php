@@ -195,9 +195,10 @@ class smartthings extends eqLogic {
     }
 	
 	public static function getWasherJobState($job){
+		$job = strtolower($job);
         switch ($job) {
             case "none":		return "Aucun";				break;
-			case "delayWash":	return "Départ différé";	break;
+			case "delaywash":	return "Départ différé";	break;
 			case "wash":		return "Lavage";			break;
 			case "rinse":		return "Rinçage";			break;
 			case "spin":		return "Essorage";			break;
