@@ -92,8 +92,26 @@ class smartthings extends eqLogic {
 			$this->checkAndUpdateCmd('switch', ($status->switch->switch->value == "off") ? 0 : 1);
 			$this->checkAndUpdateCmd('status', ($status->washerOperatingState->machineState->value == "stop") ? 0 : 1);
             $vars = get_object_vars($status);
-            $this->checkAndUpdateCmd('temperature', $vars["custom.washerWaterTemperature"]->washerWaterTemperature->value);
-            $this->checkAndUpdateCmd('rinse_cycles', $vars["custom.washerRinseCycles"]->washerRinseCycles->value);
+			$switch = $status->switch->switch->value;
+			if ($switch =="off") {
+				$this->checkAndUpdateCmd('temperature', "0");
+				$this->checkAndUpdateCmd('rinse_cycles', "0");
+				$this->checkAndUpdateCmd('spin_level', "0");
+				$this->checkAndUpdateCmd('mode', "Appareil hors tension...");
+              	$this->checkAndUpdateCmd('remaining_time', "0 minute");
+			} else {
+				$this->checkAndUpdateCmd('temperature', $vars["custom.washerWaterTemperature"]->washerWaterTemperature->value);
+				$this->checkAndUpdateCmd('rinse_cycles', $vars["custom.washerRinseCycles"]->washerRinseCycles->value);
+				$this->checkAndUpdateCmd('spin_level', $vars["custom.washerSpinLevel"]->washerSpinLevel->value);
+              	$this->checkAndUpdateCmd('remaining_time', self::dateDiff(time(), strtotime($status->washerOperatingState->completionTime->value)));
+				$mode_wash = $status->washerMode->washerMode->value;
+				// find mode
+				if ($mode_wash == "") {
+					$mode_wash = $vars["samsungce.washerCycle"]->washerCycle->value;
+				}
+				log::add('smartthings', 'debug', __('washer mode', __FILE__).'->' . $mode_wash . '<-');
+				$this->checkAndUpdateCmd('mode', self::getWasherModeLabel($mode_wash));
+			}
             $job_wash = $status->execute->data->value->payload->currentJobState;
 			if ($job_wash == "") {
 				$job_wash = $status->washerOperatingState->washerJobState->value;
@@ -106,16 +124,8 @@ class smartthings extends eqLogic {
 				$this->checkAndUpdateCmd('progress', $status->execute->data->value->payload->progressPercentage);
 				$this->checkAndUpdateCmd('end_mode', self::getWasherCompletionTime($status->washerOperatingState->completionTime->value));
 			}
-            $this->checkAndUpdateCmd('remaining_time', self::dateDiff(time(), strtotime($status->washerOperatingState->completionTime->value)));
             $this->checkAndUpdateCmd('power', $status->powerConsumptionReport->powerConsumption->value->energy);
-			$mode_wash = $status->washerMode->washerMode->value;
-			// find mode
-            if ($mode_wash == "") {
-				$mode_wash = $vars["samsungce.washerCycle"]->washerCycle->value;
-			}
-			log::add('smartthings', 'debug', __('washer mode', __FILE__).'->' . $mode_wash . '<-');
-			$this->checkAndUpdateCmd('mode', self::getWasherModeLabel($mode_wash));
-            $this->checkAndUpdateCmd('spin_level', $vars["custom.washerSpinLevel"]->washerSpinLevel->value);
+
 
         } else if($this->getConfiguration('type') == "c2c-rgbw-color-bulb") {
             // TODO
@@ -154,53 +164,53 @@ class smartthings extends eqLogic {
             case "Table_00_Course_5C":  return "Super rapide";          	break;
             case "Table_00_Course_5B":  return "Coton";                 	break;
             case "Table_00_Course_68":	return "ECoton";	            	break;
-            case "Table_00_Course_67":  return "Synthétique";			break;
+            case "Table_00_Course_67":  return "Synthétique";				break;
             case "Table_00_Course_65":  return "Laine";	               	 	break;
-            case "Table_00_Course_6C":  return "Jeans";		           	break;
+            case "Table_00_Course_6C":  return "Jeans";		           		break;
             case "Table_00_Course_64":  return "Rinçage + essorage";		break;
             case "Table_00_Course_63":  return "Nettoyage tambour"; 		break;
             case "Table_00_Course_61":  return "Couleur";           		break;
-            case "Table_00_Course_60":  return "Imperméable";      		break;
+            case "Table_00_Course_60":  return "Imperméable";      			break;
             case "Table_00_Course_5F":  return "Bébé coton";        		break;
             case "Table_00_Course_5E":  return "Délicat";           		break;
             case "Table_00_Course_66":  return "Draps";             		break;
-            case "Table_00_Course_5D":  return "Eco";    			break;
-            case "Table_00_Course_D0":  return "Coton";				break;
-            case "Table_00_Course_D1":  return "Coton Eco";			break;
-            case "Table_00_Course_D2":  return "Synthétique";			break;
-            case "Table_00_Course_D3":  return "Textiles Délicats";		break;
+            case "Table_00_Course_5D":  return "Eco";    					break;
+            case "Table_00_Course_D0":  return "Coton";						break;
+            case "Table_00_Course_D1":  return "Coton Eco";					break;
+            case "Table_00_Course_D2":  return "Synthétique";				break;
+            case "Table_00_Course_D3":  return "Textiles Délicats";			break;
             case "Table_00_Course_D4":  return "Rinçage + Essorage";		break;
             case "Table_00_Course_D5":  return "Nettoyage Tambour Eco+";	break;
-            case "Table_00_Course_D6":  return "Linge De Lit";			break;
+            case "Table_00_Course_D6":  return "Linge De Lit";				break;
             case "Table_00_Course_D7":  return "Entretient De Plein Air";	break;
-            case "Table_00_Course_D8":  return "Laine";				break;
-            case "Table_00_Course_D9":  return "Vêtements Sombres";		break;
-            case "Table_00_Course_DA":  return "Lavage Super Eco";		break;
-            case "Table_00_Course_DB":  return "Super Rapide";			break;
+            case "Table_00_Course_D8":  return "Laine";						break;
+            case "Table_00_Course_D9":  return "Vêtements Sombres";			break;
+            case "Table_00_Course_DA":  return "Lavage Super Eco";			break;
+            case "Table_00_Course_DB":  return "Super Rapide";				break;
             case "Table_00_Course_DC":  return "Lavage Rapide 15mn";		break;
             case "Table_00_Course_BA":  return "Vidange / Essorage";		break;
-            case "Table_02_Course_1C":	return "Eco 40-60";			break;
-            case "Table_02_Course_1B":	return "Coton";				break;
-            case "Table_02_Course_1E":	return "Express 15mn";			break;
-            case "Table_02_Course_1F":	return "Intensif à froid";		break;
-            case "Table_02_Course_25":	return "Synthétique";			break;
-            case "Table_02_Course_26":	return "Délicat";			break;
-            case "Table_02_Course_33":	return "Serviettes";			break;
-            case "Table_02_Course_24":	return "Draps";				break;
-            case "Table_02_Course_32":	return "Chemises";			break;
-            case "Table_02_Course_20":	return "Anti-allergènes";		break;
-            case "Table_02_Course_22":	return "Laine";				break;
-            case "Table_02_Course_23":	return "Extérieur";			break;
-            case "Table_02_Course_2F":	return "Sport";				break;
-            case "Table_02_Course_21":	return "Couleurs";			break;
-            case "Table_02_Course_2A":	return "Jeans";				break;
-            case "Table_02_Course_2E":	return "Bébé Coton";			break;
-            case "Table_02_Course_2D":	return "Lavage Silencieux";		break;
-            case "Table_02_Course_34":	return "Mix";				break;
-            case "Table_02_Course_30":	return "Journée nuageuse";		break;
+            case "Table_02_Course_1C":	return "Eco 40-60";					break;
+            case "Table_02_Course_1B":	return "Coton";						break;
+            case "Table_02_Course_1E":	return "Express 15mn";				break;
+            case "Table_02_Course_1F":	return "Intensif à froid";			break;
+            case "Table_02_Course_25":	return "Synthétique";				break;
+            case "Table_02_Course_26":	return "Délicat";					break;
+            case "Table_02_Course_33":	return "Serviettes";				break;
+            case "Table_02_Course_24":	return "Draps";						break;
+            case "Table_02_Course_32":	return "Chemises";					break;
+            case "Table_02_Course_20":	return "Anti-allergènes";			break;
+            case "Table_02_Course_22":	return "Laine";						break;
+            case "Table_02_Course_23":	return "Extérieur";					break;
+            case "Table_02_Course_2F":	return "Sport";						break;
+            case "Table_02_Course_21":	return "Couleurs";					break;
+            case "Table_02_Course_2A":	return "Jeans";						break;
+            case "Table_02_Course_2E":	return "Bébé Coton";				break;
+            case "Table_02_Course_2D":	return "Lavage Silencieux";			break;
+            case "Table_02_Course_34":	return "Mix";						break;
+            case "Table_02_Course_30":	return "Journée nuageuse";			break;
             case "Table_02_Course_27":	return "Rinçage + Essorage";		break;
             case "Table_02_Course_28":	return "Vidange / Essorage";		break;
-            case "Table_02_Course_3A":	return "Nettoyage Tambour";		break;
+            case "Table_02_Course_3A":	return "Nettoyage Tambour";			break;
 			default:
 				return "Inconnu ".$mode;
 				log::add('smartthings', 'info', __('Function mode unknow ->', __FILE__).$mode);
@@ -211,14 +221,14 @@ class smartthings extends eqLogic {
 	public static function getWasherJobState($job){
 		$job = strtolower($job);
 		switch ($job) {
-		    	case "none":		return "Aucun";				break;
+			case "none":			return "Aucun";				break;
 			case "weightsensing":	return "Pesée";				break;
-			case "delaywash":	return "Départ différé";		break;
-			case "wash":		return "Lavage";			break;
-			case "rinse":		return "Rinçage";			break;
-			case "spin":		return "Essorage";			break;
-			case "finish":		return "Terminé";			break;
-			default:		return $job;				break;
+			case "delaywash":		return "Départ différé";	break;
+			case "wash":			return "Lavage";			break;
+			case "rinse":			return "Rinçage";			break;
+			case "spin":			return "Essorage";			break;
+			case "finish":			return "Terminé";			break;
+			default:				return $job;				break;
 		}
 	}
 
@@ -681,5 +691,3 @@ class smartthingsCmd extends cmd {
     }
     /*     * **********************Getteur Setteur*************************** */
 }
-
-
